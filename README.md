@@ -24,6 +24,78 @@ You need to create a user in the Mist application when you first start it up. Sw
 
 See the source code for more documentation. All relevant code is in `MainActivity.java`.
 
+## Java API
+
+The Java API currently does not implement the full featureset of MistApi.
+
+### Mist commands
+
+```java
+Mist.login(LoginCb callback)
+```
+
+Log in to Mist. This registers the Ui to Mist.
+
+```java
+Mist.signals(SignalsCb callback)
+```
+
+Receive signals from Mist, like changes in available peers etc.
+
+```java
+Mist.listPeers(ListPeersCb callback)
+```
+
+List available peers.
+
+```java
+Mist.settings(SettingsCb callback)
+```
+
+The settings call is used to request Wifi commissioning, permissions etc. from Mist. 
+
+### Control commands
+
+All control commands require the remote peer object as the first parameter. It is obtained using `Mist.listPeers`.
+
+```java
+Control.model(Peer peer, ModelCb callback)
+```
+
+Request a model from the device. The Mist model is represented as a JSONObject.
+
+```java
+Control.follow(Peer peer, FollowCb callback)
+```
+
+Request updates from the device about values.
+
+```java
+Control.write(Peer peer, String endpointId, Boolean value, WriteCb callback)
+```
+
+Write to a boolean endpoint.
+
+```java
+Control.write(Peer peer, String endpointId, int value, WriteCb callback)
+```
+
+Write to a int endpoint.
+
+```java
+Control.write(Peer peer, String endpointId, float value, WriteCb callback)
+```
+
+Write to a float endpoint (actual internal representation is a double)
+
+```java
+Control.write(Peer peer, String endpointId, String value, WriteCb callback)
+```
+
+Write to a string endpoint.
+
+
+
 ## Known limitations
 
 This is based on an android port of the Mist library, and is very limited in its capabilities, and you can probably break it is several ways.
