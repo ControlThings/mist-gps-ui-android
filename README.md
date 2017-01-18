@@ -5,9 +5,9 @@ Example software for getting started with Mist Ui development. It demonstrates c
 ## Prerequisites
 
 * Android Studio (tested in 2.2.2)
-* Wish - Peer-to-peer platform (download .apk)
-* Mist - IoT layer for Wish (download .apk)
-* Mist GPS - An android Service playing the role of a Mist Node/Device. (download .apk or get source code)
+* Wish - Peer-to-peer platform (https://mist.controlthings.fi/dist/Wish-v0.6.5-pre3.apk)
+* Mist - IoT layer for Wish (https://mist.controlthings.fi/dist/MistUi-pre3.apk)
+* Mist GPS - An android Service playing the role of a Mist Node/Device. (https://mist.controlthings.fi/dist/MistGps-pre3.apk or get source code https://github.com/ControlThings/mist-gps-android)
 
 Download and install Wish, Mist and the MistGps service.
 
