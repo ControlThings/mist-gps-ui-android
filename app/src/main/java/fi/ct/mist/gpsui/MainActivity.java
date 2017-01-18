@@ -162,6 +162,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void ready() {
+        // Start listening to signals from Mist Sandbox
+
+        // ok:     immediate response if signals request is successful
+        // peers:  whenever the available peers changes, comes online, goes offline, sees new peer, lost access to peer
 
         Mist.signals(new Mist.SignalsCb() {
             @Override
