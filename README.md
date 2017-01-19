@@ -5,7 +5,7 @@ Example software for getting started with Mist Ui development. It demonstrates c
 ## Prerequisites
 
 * Android Studio (tested in 2.2.2)
-* Wish - Peer-to-peer platform (https://mist.controlthings.fi/dist/Wish-v0.6.5-pre3.apk)
+* Wish - Peer-to-peer trustbased networking layer (https://mist.controlthings.fi/dist/Wish-v0.6.5-pre3.apk)
 * Mist - IoT layer for Wish (https://mist.controlthings.fi/dist/MistUi-pre3.apk)
 * Mist GPS - An android Service playing the role of a Mist Node/Device. (https://mist.controlthings.fi/dist/MistGps-pre3.apk or get source code https://github.com/ControlThings/mist-gps-android)
 
@@ -98,7 +98,10 @@ Write to a string endpoint.
 
 ## Known limitations
 
-This is based on an android port of the Mist library, and is very limited in its capabilities, and you can probably break it is several ways.
+This is based on an android port of the Mist library, and is very limited in its capabilities, and you can probably break it in several ways.
+
+* Hard coded relay servers
+* Friend requests are automatically accepted
 
 Q: Peer does not show up
 A: Close all apps, and start them in the following order: Mist Ui, Mist Gps, Gps Ui
