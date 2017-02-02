@@ -1,14 +1,24 @@
 package fi.ct.mist.gpsui;
 
+import android.content.Context;
 import android.content.Intent;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
+import org.osmdroid.api.IMapController;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.ItemizedIconOverlay;
+import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
+import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
 
@@ -18,13 +28,19 @@ import mist.api.Control;
 import mist.api.Mist;
 
 public class MainActivity extends AppCompatActivity {
-
+    private String TAG = "MainActivity";
+    /*
     private TextView peerOnlineState;
     private Switch enabled;
     private TextView counter;
     private TextView lon;
     private TextView lat;
     private TextView accuracy;
+    */
+    private Point currentPosition = new Point(0,0);
+    private MapView map;
+    private MapMarker marker;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
             public void end() {}
         });
 
+        /*
         // Get handles to ui components
         peerOnlineState = (TextView) findViewById(R.id.peerOnlineState);
         enabled = (Switch) findViewById(R.id.enabled);
@@ -56,6 +73,26 @@ public class MainActivity extends AppCompatActivity {
         lon = (TextView) findViewById(R.id.lon);
         lat = (TextView) findViewById(R.id.lat);
         accuracy = (TextView) findViewById(R.id.accuracy);
+        */
+
+
+        //important! set your user agent to prevent getting banned from the osm servers
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+
+        map = (MapView) findViewById(R.id.map);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setBuiltInZoomControls(true);
+        map.setMultiTouchControls(true);
+
+        IMapController mapController = map.getController();
+        mapController.setZoom(15);
+
+        mapController.setCenter(currentPosition);
+
+        /* Create a marker which is tied to current position. It will move as current position updates. */
+        marker = new MapMarker(currentPosition, map, ctx);
+
     }
 
     int id = 0;
@@ -69,7 +106,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void cbBool(String epid, boolean value) {
                 if (epid.equals("enabled")) {
-                    enabled.setChecked(value);
+                    Log.d(TAG, "enabled" + value);
+                    //enabled.setChecked(value);
                 }
             }
 
@@ -79,25 +117,31 @@ public class MainActivity extends AppCompatActivity {
                 String str = Integer.toString(value);
 
                 if (epid.equals("counter")) {
-                    counter.setText(str);
+                    Log.d(TAG, "counter" + value);
+                    //counter.setText(str);
                 }
             }
 
             @Override
             public void cbFloat(String epid, float value) {
 
-                String str = Double.toString(value);
-
                 if (epid.equals("lon")) {
-                    lon.setText(str);
+                    //lon.setText(str);
+                    currentPosition.setLongitude(value);
                 }
 
                 if (epid.equals("lat")) {
-                    lat.setText(str);
+                    //lat.setText(str);
+                    currentPosition.setLatitude(value);
                 }
 
                 if (epid.equals("accuracy")) {
-                    accuracy.setText(str);
+                    //accuracy.setText(str);
+                    Log.d(TAG, "accuracy " + value);
+                }
+
+                if (currentPosition.isFix()) {
+                    map.getController().setCenter(currentPosition);
                 }
 
             }
@@ -112,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
             public void end() {}
         });
 
+        /*
         enabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
@@ -128,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+        */
 
     }
 
@@ -141,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
         for (final Peer peer : peers) {
             if(peer.isOnline()) {
                 Toast.makeText(getApplicationContext(), "Peer is online.", Toast.LENGTH_SHORT).show();
-                peerOnlineState.setText("Peer is online.");
+                //peerOnlineState.setText("Peer is online.");
                 Control.model(peer, new Control.ModelCb() {
                     @Override
                     public void cb(JSONObject data) {
@@ -156,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
                 });
             } else {
                 Toast.makeText(getApplicationContext(), "Peer is offline.", Toast.LENGTH_SHORT).show();
-                peerOnlineState.setText("Peer is offline.");
+                //peerOnlineState.setText("Peer is offline.");
             }
         }
     }

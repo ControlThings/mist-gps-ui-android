@@ -27,4 +27,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.0.1'
     testCompile 'junit:junit:4.12'
     compile project(':MistCustomApi')
+    compile 'org.osmdroid:osmdroid-android:5.6.3'   //openstreetmap, see https://github.com/osmdroid/osmdroid
 }
