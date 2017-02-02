@@ -140,6 +140,10 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "accuracy " + value);
                 }
 
+                if (epid.equals("name")) {
+                    setTitle("position of " + value);
+                }
+
                 if (currentPosition.isFix()) {
                     map.getController().setCenter(currentPosition);
                 }
