@@ -149,7 +149,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void cbString(String epid, String value) {
                 if (epid.equals("name")) {
-                    setTitle("position of " + value);
+                    if (value.length() != 0){
+                        setTitle("position of " + value);
+                    }
                 }
             }
 
