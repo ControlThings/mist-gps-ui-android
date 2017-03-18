@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
                             if (peers.size() == 0) {
                                 // if there are no peers, request settings page for this app to be shown
                                 // this feature will enable claiming wifi devices etc.
-                                Mist.settings(new Mist.SettingsCb() {
+                                Mist.settings(Mist.Settings.Hint.addPeer, new Mist.SettingsCb() {
                                     @Override
                                     public void cb() {}
 
@@ -238,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     @Override
                                     public void end() {}
+
                                 });
                             }
 
