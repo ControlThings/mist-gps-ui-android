@@ -1,2 +1,2 @@
 configurations.maybeCreate("default")
-artifacts.add("default", file('MistCustomApi-v0.1.0-alpha-9-ga45d.aar'))
+artifacts.add("default", file('MistCustomApi-v0.1.0-alpha-10-g9aa0.aar'))
