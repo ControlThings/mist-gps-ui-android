@@ -22,12 +22,15 @@ import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import mist.MistIdentity;
 import mist.MistService;
 import mist.Peer;
 import mist.api.Control;
+import mist.api.Identity;
 import mist.api.Mist;
 
 public class MainActivity extends AppCompatActivity {
@@ -76,9 +79,7 @@ public class MainActivity extends AppCompatActivity {
         IMapController mapController = map.getController();
         mapController.setZoom(5);
 
-        //mapController.setCenter(currentPosition);
-
-        /* Create a marker which is tied to current position. It will move as current position updates. */
+        /* Create the map overlay where we will add the markers */
         markerOverlay = new MapMarkerOverlay(map, ctx);
 
     }
@@ -120,6 +121,13 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Error! point not found.");
                 }
 
+                if (currentPoint.isFix() && !currentPoint.isAdded()) {
+                    markerOverlay.addMarker(currentPoint);
+                    currentPoint.setAdded(true);
+
+
+                }
+
                 if (epid.equals("lon")) {
                     //lon.setText(str);
                     currentPoint.setLongitude(value);
@@ -139,14 +147,40 @@ public class MainActivity extends AppCompatActivity {
                 double mLon = 0;
                 int numPoints = 0;
 
+                boolean first = false;
+
+                int minLat = Integer.MAX_VALUE;
+                int maxLat = Integer.MIN_VALUE;
+                int minLon = Integer.MAX_VALUE;
+                int maxLon = Integer.MIN_VALUE;
+
+
                 for (Point point : points) {
                     if (point.isFix()) {
+                        int lat = point.getLatitudeE6();
+                        int lon = point.getLongitudeE6();
+
+                        maxLat = Math.max(lat, maxLat);
+                        minLat = Math.min(lat, minLat);
+                        maxLon = Math.max(lon, maxLon);
+                        minLon = Math.min(lon, minLon);
+
                         mLat += point.getLatitude();
                         mLon += point.getLongitude();
                         numPoints++;
                     }
                 }
-                map.getController().setCenter(new GeoPoint(mLat/numPoints, mLon/numPoints));
+
+                if (numPoints > 1) {
+                    map.getController().zoomToSpan(Math.abs(maxLat - minLat) / 1000000.0, Math.abs(maxLon - minLon) / 1000000.0);
+                    map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0 / 1000000.0,
+                            (double) (maxLon + minLon) / 2.0 / 1000000.0));
+                }
+                else {
+                    map.getController().setCenter(currentPoint);
+                    map.getController().setZoom(14);
+                }
+
 
 
             }
@@ -157,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
                     if (value.length() != 0){
                         setTitle("position of " + value);
                     }
-                    //markerOverlay.addMarker(new Point(currentPosition.getLatitude(), currentPosition.getLongitude()));
                 }
             }
 
@@ -177,21 +210,43 @@ public class MainActivity extends AppCompatActivity {
             if(peer.isOnline()) {
                 Toast.makeText(getApplicationContext(), "Peer is online.", Toast.LENGTH_SHORT).show();
                 //peerOnlineState.setText("Peer is online.");
-                Control.model(peer, new Control.ModelCb() {
+
+
+                Identity.list(new Identity.ListCb() {
                     @Override
-                    public void cb(JSONObject data) {
-                        follow(peer);
+                    public void cb(ArrayList<MistIdentity> arrayList) {
+                        for (MistIdentity identity : arrayList) {
+                            if (Arrays.equals(identity.getUid(), peer.getRemoteId())) {
+                                Point newPoint = new Point(peer, identity.getAlias(), 0,0);
+                                points.add(newPoint);
+                                Control.model(peer, new Control.ModelCb() {
+                                    @Override
+                                    public void cb(JSONObject data) {
+                                        follow(peer);
+                                    }
+
+                                    @Override
+                                    public void err(int code, String msg) {}
+
+                                    @Override
+                                    public void end() {}
+                                });
+
+                            }
+                        }
                     }
 
                     @Override
-                    public void err(int code, String msg) {}
+                    public void err(int i, String s) {
+
+                    }
 
                     @Override
-                    public void end() {}
+                    public void end() {
+
+                    }
                 });
-                Point newPoint = new Point(peer, 0,0);
-                points.add(newPoint);
-                markerOverlay.addMarker(newPoint);
+
             } else {
                 Toast.makeText(getApplicationContext(), "Peer is offline.", Toast.LENGTH_SHORT).show();
                 //peerOnlineState.setText("Peer is offline.");
