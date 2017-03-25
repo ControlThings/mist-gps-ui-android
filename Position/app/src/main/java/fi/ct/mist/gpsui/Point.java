@@ -2,6 +2,8 @@ package fi.ct.mist.gpsui;
 
 import org.osmdroid.util.GeoPoint;
 
+import mist.Peer;
+
 /**
  * Created by jan on 2/2/17.
  */
@@ -9,9 +11,15 @@ import org.osmdroid.util.GeoPoint;
 public class Point extends GeoPoint {
     private boolean latitudeInitialised = false;
     private boolean longitudeInitialised = false;
+    private Peer peer;
 
-    public Point(double latitude, double longitude) {
+    public Point(Peer peer, double latitude, double longitude) {
         super(latitude, longitude);
+        this.peer = peer;
+    }
+
+    public Peer getPeer() {
+        return peer;
     }
 
     @Override

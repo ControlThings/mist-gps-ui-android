@@ -15,12 +15,15 @@ import org.json.JSONObject;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import mist.MistService;
 import mist.Peer;
@@ -29,33 +32,29 @@ import mist.api.Mist;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG = "MainActivity";
-    /*
-    private TextView peerOnlineState;
-    private Switch enabled;
-    private TextView counter;
-    private TextView lon;
-    private TextView lat;
-    private TextView accuracy;
-    */
-    private Point currentPosition = new Point(0,0);
+    private ArrayList<Point> points = new ArrayList<>();
     private MapView map;
-    private MapMarker marker;
+    private MapMarkerOverlay markerOverlay;
 
+    Intent mistService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Intent intent = new Intent(this, MistService.class);
-        startService(intent);
+        mistService = new Intent(this, MistService.class);
+        startService(mistService);
 
         // Login to sandbox
         Mist.login(new Mist.LoginCb() {
             @Override
             public void cb(boolean connected) {
                 // on successful login to sandbox
-                ready();
+                Log.d(TAG, "Login cb:" + connected);
+                if (connected) {
+                    ready();
+                }
             }
 
             @Override
@@ -64,17 +63,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void end() {}
         });
-
-        /*
-        // Get handles to ui components
-        peerOnlineState = (TextView) findViewById(R.id.peerOnlineState);
-        enabled = (Switch) findViewById(R.id.enabled);
-        counter = (TextView) findViewById(R.id.counter);
-        lon = (TextView) findViewById(R.id.lon);
-        lat = (TextView) findViewById(R.id.lat);
-        accuracy = (TextView) findViewById(R.id.accuracy);
-        */
-
 
         //important! set your user agent to prevent getting banned from the osm servers
         Context ctx = getApplicationContext();
@@ -86,23 +74,19 @@ public class MainActivity extends AppCompatActivity {
         map.setMultiTouchControls(true);
 
         IMapController mapController = map.getController();
-        mapController.setZoom(15);
+        mapController.setZoom(5);
 
-        mapController.setCenter(currentPosition);
+        //mapController.setCenter(currentPosition);
 
         /* Create a marker which is tied to current position. It will move as current position updates. */
-        marker = new MapMarker(currentPosition, map, ctx);
+        markerOverlay = new MapMarkerOverlay(map, ctx);
 
     }
 
-    int id = 0;
+    ArrayList<Integer> followIds = new ArrayList<>();
 
     private void follow(final Peer peer) {
-        if (id != 0) {
-            Control.cancel(id);
-            id = 0;
-        }
-        id = Control.follow(peer, new Control.FollowCb() {
+        int id = Control.follow(peer, new Control.FollowCb() {
             @Override
             public void cbBool(String epid, boolean value) {
                 if (epid.equals("enabled")) {
@@ -124,15 +108,26 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void cbFloat(String epid, float value) {
+                Point currentPoint = null;
+                for (Point point : points) {
+                    if (point.getPeer().equals(peer)) {
+                        currentPoint = point;
+                        break;
+                    }
+                }
+
+                if (currentPoint == null) {
+                    Log.d(TAG, "Error! point not found.");
+                }
 
                 if (epid.equals("lon")) {
                     //lon.setText(str);
-                    currentPosition.setLongitude(value);
+                    currentPoint.setLongitude(value);
                 }
 
                 if (epid.equals("lat")) {
                     //lat.setText(str);
-                    currentPosition.setLatitude(value);
+                    currentPoint.setLatitude(value);
                 }
 
                 if (epid.equals("accuracy")) {
@@ -140,9 +135,19 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "accuracy " + value);
                 }
 
-                if (currentPosition.isFix()) {
-                    map.getController().setCenter(currentPosition);
+                double mLat = 0;
+                double mLon = 0;
+                int numPoints = 0;
+
+                for (Point point : points) {
+                    if (point.isFix()) {
+                        mLat += point.getLatitude();
+                        mLon += point.getLongitude();
+                        numPoints++;
+                    }
                 }
+                map.getController().setCenter(new GeoPoint(mLat/numPoints, mLon/numPoints));
+
 
             }
 
@@ -152,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
                     if (value.length() != 0){
                         setTitle("position of " + value);
                     }
+                    //markerOverlay.addMarker(new Point(currentPosition.getLatitude(), currentPosition.getLongitude()));
                 }
             }
 
@@ -161,34 +167,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void end() {}
         });
-
-        /*
-        enabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                Toast.makeText(getApplicationContext(), "Writing enabled to "+b, Toast.LENGTH_SHORT).show();
-                Control.write(peer, "enabled", b, new Control.WriteCb() {
-                    @Override
-                    public void cb() {}
-
-                    @Override
-                    public void err(int code, String msg) {}
-
-                    @Override
-                    public void end() {}
-                });
-            }
-        });
-        */
+        followIds.add(new Integer(id));
 
     }
 
     private void updatePeersList(ArrayList<Peer> peers) {
-
-        if(peers.size() > 1) {
-            // This demo app does not support multiple peers
-            Toast.makeText(getApplicationContext(), "Warning: Multiple devices not supported in this app.", Toast.LENGTH_LONG).show();
-        }
 
         for (final Peer peer : peers) {
             if(peer.isOnline()) {
@@ -206,6 +189,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void end() {}
                 });
+                Point newPoint = new Point(peer, 0,0);
+                points.add(newPoint);
+                markerOverlay.addMarker(newPoint);
             } else {
                 Toast.makeText(getApplicationContext(), "Peer is offline.", Toast.LENGTH_SHORT).show();
                 //peerOnlineState.setText("Peer is offline.");
@@ -213,15 +199,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    int readySignalId = 0;
+
     private void ready() {
         // Start listening to signals from Mist Sandbox
 
         // ok:     immediate response if signals request is successful
         // peers:  whenever the available peers changes, comes online, goes offline, sees new peer, lost access to peer
 
-        Mist.signals(new Mist.SignalsCb() {
+        readySignalId = Mist.signals(new Mist.SignalsCb() {
             @Override
             public void cb(String signal) {
+                Log.d(TAG, "signal: " + signal);
                 if (signal.equals("peers") || signal.equals("ok")) {
                     Mist.listPeers(new Mist.ListPeersCb() {
                         @Override
@@ -231,13 +220,16 @@ public class MainActivity extends AppCompatActivity {
                                 // this feature will enable claiming wifi devices etc.
                                 Mist.settings(Mist.Settings.Hint.addPeer, new Mist.SettingsCb() {
                                     @Override
-                                    public void cb() {}
+                                    public void cb() {
+                                    }
 
                                     @Override
-                                    public void err(int i, String s) {}
+                                    public void err(int i, String s) {
+                                    }
 
                                     @Override
-                                    public void end() {}
+                                    public void end() {
+                                    }
 
                                 });
                             }
@@ -246,14 +238,15 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         @Override
-                        public void err(int code, String msg) {}
+                        public void err(int code, String msg) {
+                        }
 
                         @Override
-                        public void end() {}
+                        public void end() {
+                        }
                     });
                 }
             }
-
             @Override
             public void err(int code, String msg) {}
 
@@ -266,10 +259,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        stopService(mistService);
 
-        if (id != 0) {
-            // Cancel the last follow request
-            Control.cancel(id);
+        if (readySignalId != 0) {
+            Mist.cancel(readySignalId);
+            readySignalId = 0;
+        }
+
+        for (Integer id : followIds) {
+            if (id.intValue() != 0) {
+                Control.cancel(id.intValue());
+            }
+            followIds = new ArrayList<>();
         }
     }
 }

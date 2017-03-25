@@ -8,21 +8,32 @@ import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
- * Created by jan on 2/2/17.
+ * Created by jan on 3/25/17.
  */
 
-public class MapMarker {
-    private OverlayItem marker;
-    public MapMarker(Point point, MapView map, Context ctx) {
-                /* Add a marker tied to currentPosition */
-        ArrayList<OverlayItem> items = new ArrayList();
-        marker = new OverlayItem("Title", "Description", point);
-        items.add(marker); // Lat/Lon decimal degrees
+public class MapMarkerOverlay {
+    private MapView map;
+    private Context ctx;
+    private ItemizedOverlayWithFocus<OverlayItem> mOverlay;
+    private ArrayList<OverlayItem> items = new ArrayList<>();
 
-        //the overlay which includes the marker
-        ItemizedOverlayWithFocus<OverlayItem> mOverlay = new ItemizedOverlayWithFocus(items,
+    public MapMarkerOverlay(MapView map, Context ctx) {
+        this.map = map;
+        this.ctx = ctx;
+    }
+
+    int cnt = 0;
+    public void addMarker(Point point) {
+        items.add(new OverlayItem("point" + cnt, "desc", point));
+        cnt++;
+
+        map.getOverlays().removeAll(map.getOverlays());
+
+        //a new overlay which includes the markers created so far
+        mOverlay = new ItemizedOverlayWithFocus(items,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(final int index, final OverlayItem item) {
@@ -38,4 +49,5 @@ public class MapMarker {
 
         map.getOverlays().add(mOverlay);
     }
+
 }
