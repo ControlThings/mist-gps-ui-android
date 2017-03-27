@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         map.setMultiTouchControls(true);
 
         IMapController mapController = map.getController();
-        mapController.setZoom(5);
+        mapController.setZoom(2);
 
         /* Create the map overlay where we will add the markers */
         markerOverlay = new MapMarkerOverlay(map, ctx);
@@ -124,8 +124,6 @@ public class MainActivity extends AppCompatActivity {
                 if (currentPoint.isFix() && !currentPoint.isAdded()) {
                     markerOverlay.addMarker(currentPoint);
                     currentPoint.setAdded(true);
-
-
                 }
 
                 if (epid.equals("lon")) {
@@ -149,16 +147,16 @@ public class MainActivity extends AppCompatActivity {
 
                 boolean first = false;
 
-                int minLat = Integer.MAX_VALUE;
-                int maxLat = Integer.MIN_VALUE;
-                int minLon = Integer.MAX_VALUE;
-                int maxLon = Integer.MIN_VALUE;
+                double minLat = Double.MAX_VALUE;
+                double maxLat = Double.MIN_VALUE;
+                double minLon = Double.MAX_VALUE;
+                double  maxLon = Double.MIN_VALUE;
 
 
                 for (Point point : points) {
                     if (point.isFix()) {
-                        int lat = point.getLatitudeE6();
-                        int lon = point.getLongitudeE6();
+                        double lat = point.getLatitude();
+                        double lon = point.getLongitude();
 
                         maxLat = Math.max(lat, maxLat);
                         minLat = Math.min(lat, minLat);
@@ -172,9 +170,9 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (numPoints > 1) {
-                    map.getController().zoomToSpan(Math.abs(maxLat - minLat) / 1000000.0, Math.abs(maxLon - minLon) / 1000000.0);
-                    map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0 / 1000000.0,
-                            (double) (maxLon + minLon) / 2.0 / 1000000.0));
+                    map.getController().zoomToSpan(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon));
+                    map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0,
+                            (double) (maxLon + minLon) / 2.0));
                 }
                 else {
                     map.getController().setCenter(currentPoint);
