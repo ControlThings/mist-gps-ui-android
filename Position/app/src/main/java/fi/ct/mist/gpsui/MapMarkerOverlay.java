@@ -27,9 +27,7 @@ public class MapMarkerOverlay {
 
     int cnt = 0;
     public void addMarker(Point point) {
-        items.add(new OverlayItem(point.getAlias(), "Point: "+cnt, point));
-
-        cnt++;
+        items.add(new OverlayItem(point.getAlias(), "Point: "+ ++cnt, point));
 
         map.getOverlays().removeAll(map.getOverlays());
 
@@ -53,5 +51,6 @@ public class MapMarkerOverlay {
 
     public void clear() {
         items.clear();
+        cnt = 0;
     }
 }
