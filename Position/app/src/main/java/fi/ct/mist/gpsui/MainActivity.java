@@ -6,9 +6,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.CompoundButton;
-import android.widget.Switch;
-import android.widget.TextView;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -17,14 +15,9 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.ItemizedIconOverlay;
-import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
-import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import mist.MistIdentity;
 import mist.MistService;
@@ -32,6 +25,8 @@ import mist.Peer;
 import mist.api.Control;
 import mist.api.Identity;
 import mist.api.Mist;
+
+import static mist.api.Mist.Settings;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG = "MainActivity";
@@ -41,10 +36,36 @@ public class MainActivity extends AppCompatActivity {
 
     Intent mistService;
 
+    /** Sticky must be set to true, when you enter MistUi from app, e.g. for Commissioning or for adding/removing peers */
+    private boolean sticky = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        /* Setup OpenStreetMaps */
+
+        //important! set your user agent to prevent getting banned from the osm servers
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+
+        map = (MapView) findViewById(R.id.map);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setBuiltInZoomControls(true);
+        map.setMultiTouchControls(true);
+
+        IMapController mapController = map.getController();
+        mapController.setZoom(2);
+
+        /* Create the map overlay where we will add the markers */
+        markerOverlay = new MapMarkerOverlay(map, ctx);
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
 
         mistService = new Intent(this, MistService.class);
         startService(mistService);
@@ -66,21 +87,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void end() {}
         });
-
-        //important! set your user agent to prevent getting banned from the osm servers
-        Context ctx = getApplicationContext();
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-
-        map = (MapView) findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
-
-        IMapController mapController = map.getController();
-        mapController.setZoom(2);
-
-        /* Create the map overlay where we will add the markers */
-        markerOverlay = new MapMarkerOverlay(map, ctx);
 
     }
 
@@ -203,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updatePeersList(ArrayList<Peer> peers) {
+        markerOverlay.clear();
 
         for (final Peer peer : peers) {
             if(peer.isOnline()) {
@@ -268,25 +275,6 @@ public class MainActivity extends AppCompatActivity {
                     Mist.listPeers(new Mist.ListPeersCb() {
                         @Override
                         public void cb(ArrayList<Peer> peers) {
-                            if (peers.size() == 0) {
-                                // if there are no peers, request settings page for this app to be shown
-                                // this feature will enable claiming wifi devices etc.
-                                Mist.settings(Mist.Settings.Hint.addPeer, new Mist.SettingsCb() {
-                                    @Override
-                                    public void cb() {
-                                    }
-
-                                    @Override
-                                    public void err(int i, String s) {
-                                    }
-
-                                    @Override
-                                    public void end() {
-                                    }
-
-                                });
-                            }
-
                             updatePeersList(peers);
                         }
 
@@ -310,9 +298,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopService(mistService);
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_settings, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.settings:
+            sticky = true;
+            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
+                @Override
+                public void cb() {}
+
+                @Override
+                public void err(int i, String s) { }
+
+                @Override
+                public void end() {}
+            });
+            return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
 
         if (readySignalId != 0) {
             Mist.cancel(readySignalId);
@@ -325,6 +340,23 @@ public class MainActivity extends AppCompatActivity {
             }
             followIds = new ArrayList<>();
         }
+
+        if (!sticky) {
+            stopService(mistService);
+        }
     }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        sticky = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
 }
 

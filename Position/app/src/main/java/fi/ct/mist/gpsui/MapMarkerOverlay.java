@@ -51,4 +51,7 @@ public class MapMarkerOverlay {
         map.getOverlays().add(mOverlay);
     }
 
+    public void clear() {
+        items.clear();
+    }
 }
