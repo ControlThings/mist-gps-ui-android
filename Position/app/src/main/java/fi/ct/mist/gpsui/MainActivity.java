@@ -90,6 +90,70 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        sticky = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (readySignalId != 0) {
+            Mist.cancel(readySignalId);
+            readySignalId = 0;
+        }
+
+        for (Integer id : followIds) {
+            if (id.intValue() != 0) {
+                Control.cancel(id.intValue());
+            }
+
+        }
+        followIds.clear();
+
+        if (!sticky) {
+            stopService(mistService);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_settings, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.settings:
+            sticky = true;
+            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
+                @Override
+                public void cb() {}
+
+                @Override
+                public void err(int i, String s) { }
+
+                @Override
+                public void end() {}
+            });
+            return true;
+        case R.id.zoomToFocus:
+            zoomToPeers();
+            return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
     ArrayList<Integer> followIds = new ArrayList<>();
 
     private void follow(final Peer peer) {
@@ -299,70 +363,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_settings, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case R.id.settings:
-            sticky = true;
-            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
-                @Override
-                public void cb() {}
-
-                @Override
-                public void err(int i, String s) { }
-
-                @Override
-                public void end() {}
-            });
-            return true;
-        case R.id.zoomToFocus:
-            zoomToPeers();
-            return true;
-        default:
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if (readySignalId != 0) {
-            Mist.cancel(readySignalId);
-            readySignalId = 0;
-        }
-
-        for (Integer id : followIds) {
-            if (id.intValue() != 0) {
-                Control.cancel(id.intValue());
-            }
-
-        }
-        followIds.clear();
-
-        if (!sticky) {
-            stopService(mistService);
-        }
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        sticky = false;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-    }
 
 }
 
