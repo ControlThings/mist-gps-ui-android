@@ -80,12 +80,6 @@ public class MainActivity extends AppCompatActivity {
                     ready();
                 }
             }
-
-            @Override
-            public void err(int code, String msg) {}
-
-            @Override
-            public void end() {}
         });
 
     }
@@ -135,16 +129,7 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
         case R.id.settings:
             sticky = true;
-            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
-                @Override
-                public void cb() {}
-
-                @Override
-                public void err(int i, String s) { }
-
-                @Override
-                public void end() {}
-            });
+            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {});
             return true;
         case R.id.zoomToFocus:
             zoomToPeers();
@@ -158,25 +143,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void follow(final Peer peer) {
         int id = Control.follow(peer, new Control.FollowCb() {
-            @Override
-            public void cbBool(String epid, boolean value) {
-                if (epid.equals("enabled")) {
-                    Log.d(TAG, "enabled" + value);
-                    //enabled.setChecked(value);
-                }
-            }
-
-            @Override
-            public void cbInt(final String epid, final int value) {
-
-                String str = Integer.toString(value);
-
-                if (epid.equals("counter")) {
-                    Log.d(TAG, "counter" + value);
-                    //counter.setText(str);
-                }
-            }
-
             @Override
             public void cbFloat(String epid, float value) {
                 Point currentPoint = null;
@@ -225,12 +191,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            @Override
-            public void err(int code, String msg) {}
-
-            @Override
-            public void end() {}
         });
         followIds.add(new Integer(id));
 
@@ -260,8 +220,6 @@ public class MainActivity extends AppCompatActivity {
                 minLon = Math.min(lon, minLon);
             }
         }
-
-
             if (numPoints > 1) {
                 map.getController().zoomToSpan(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon));
                 map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0,
@@ -282,7 +240,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Peer is online.", Toast.LENGTH_SHORT).show();
                 //peerOnlineState.setText("Peer is online.");
 
-
                 Identity.list(new Identity.ListCb() {
                     @Override
                     public void cb(ArrayList<MistIdentity> arrayList) {
@@ -295,29 +252,12 @@ public class MainActivity extends AppCompatActivity {
                                     public void cb(JSONObject data) {
                                         follow(peer);
                                     }
-
-                                    @Override
-                                    public void err(int code, String msg) {}
-
-                                    @Override
-                                    public void end() {}
                                 });
 
                             }
                         }
                     }
-
-                    @Override
-                    public void err(int i, String s) {
-
-                    }
-
-                    @Override
-                    public void end() {
-
-                    }
                 });
-
             } else {
                 Toast.makeText(getApplicationContext(), "Peer is offline.", Toast.LENGTH_SHORT).show();
                 //peerOnlineState.setText("Peer is offline.");
@@ -343,26 +283,10 @@ public class MainActivity extends AppCompatActivity {
                         public void cb(ArrayList<Peer> peers) {
                             updatePeersList(peers);
                         }
-
-                        @Override
-                        public void err(int code, String msg) {
-                        }
-
-                        @Override
-                        public void end() {
-                        }
                     });
                 }
             }
-            @Override
-            public void err(int code, String msg) {}
-
-            @Override
-            public void end() {}
-
         });
     }
-
-
 }
 
