@@ -90,6 +90,70 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        sticky = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (readySignalId != 0) {
+            Mist.cancel(readySignalId);
+            readySignalId = 0;
+        }
+
+        for (Integer id : followIds) {
+            if (id.intValue() != 0) {
+                Control.cancel(id.intValue());
+            }
+
+        }
+        followIds.clear();
+
+        if (!sticky) {
+            stopService(mistService);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_settings, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.settings:
+            sticky = true;
+            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
+                @Override
+                public void cb() {}
+
+                @Override
+                public void err(int i, String s) { }
+
+                @Override
+                public void end() {}
+            });
+            return true;
+        case R.id.zoomToFocus:
+            zoomToPeers();
+            return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
     ArrayList<Integer> followIds = new ArrayList<>();
 
     private void follow(final Peer peer) {
@@ -116,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void cbFloat(String epid, float value) {
                 Point currentPoint = null;
+
                 for (Point point : points) {
                     if (point.getPeer().equals(peer)) {
                         currentPoint = point;
@@ -130,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 if (currentPoint.isFix() && !currentPoint.isAdded()) {
                     markerOverlay.addMarker(currentPoint);
                     currentPoint.setAdded(true);
+                    zoomToPeers();
                 }
 
                 if (epid.equals("lon")) {
@@ -147,45 +213,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "accuracy " + value);
                 }
 
-                double mLat = 0;
-                double mLon = 0;
-                int numPoints = 0;
-
-                boolean first = false;
-
-                double minLat = Double.MAX_VALUE;
-                double maxLat = Double.MIN_VALUE;
-                double minLon = Double.MAX_VALUE;
-                double  maxLon = Double.MIN_VALUE;
-
-
-                for (Point point : points) {
-                    if (point.isFix()) {
-                        double lat = point.getLatitude();
-                        double lon = point.getLongitude();
-
-                        maxLat = Math.max(lat, maxLat);
-                        minLat = Math.min(lat, minLat);
-                        maxLon = Math.max(lon, maxLon);
-                        minLon = Math.min(lon, minLon);
-
-                        mLat += point.getLatitude();
-                        mLon += point.getLongitude();
-                        numPoints++;
-                    }
-                }
-
-                if (numPoints > 1) {
-                    map.getController().zoomToSpan(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon));
-                    map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0,
-                            (double) (maxLon + minLon) / 2.0));
-                }
-                else {
-                    map.getController().setCenter(currentPoint);
-                    map.getController().setZoom(14);
-                }
-
-
+                map.invalidate(); /* This is needed in order to make the overlay to automatically redraw without the used needing to move menu etc. */
 
             }
 
@@ -208,8 +236,46 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void zoomToPeers() {
+        int numPoints = points.size();
+
+        if (numPoints == 0) {
+            return;
+        }
+
+        double minLat = Double.MAX_VALUE;
+        double maxLat = Double.MIN_VALUE;
+        double minLon = Double.MAX_VALUE;
+        double  maxLon = Double.MIN_VALUE;
+
+        Point currentPoint = points.get(0);
+        for (Point point : points) {
+            if (point.isFix()) {
+                double lat = point.getLatitude();
+                double lon = point.getLongitude();
+
+                maxLat = Math.max(lat, maxLat);
+                minLat = Math.min(lat, minLat);
+                maxLon = Math.max(lon, maxLon);
+                minLon = Math.min(lon, minLon);
+            }
+        }
+
+
+            if (numPoints > 1) {
+                map.getController().zoomToSpan(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon));
+                map.getController().setCenter(new GeoPoint((double) (maxLat + minLat) / 2.0,
+                        (double) (maxLon + minLon) / 2.0));
+            } else {
+                map.getController().setCenter(currentPoint);
+                map.getController().setZoom(14);
+            }
+
+    }
+
     private void updatePeersList(ArrayList<Peer> peers) {
         markerOverlay.clear();
+        points.clear();
 
         for (final Peer peer : peers) {
             if(peer.isOnline()) {
@@ -297,66 +363,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_settings, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case R.id.settings:
-            sticky = true;
-            Mist.settings(Settings.Hint.addPeer, new Mist.SettingsCb() {
-                @Override
-                public void cb() {}
-
-                @Override
-                public void err(int i, String s) { }
-
-                @Override
-                public void end() {}
-            });
-            return true;
-        default:
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if (readySignalId != 0) {
-            Mist.cancel(readySignalId);
-            readySignalId = 0;
-        }
-
-        for (Integer id : followIds) {
-            if (id.intValue() != 0) {
-                Control.cancel(id.intValue());
-            }
-            followIds = new ArrayList<>();
-        }
-
-        if (!sticky) {
-            stopService(mistService);
-        }
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        sticky = false;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-    }
 
 }
 
