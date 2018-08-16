@@ -1,6 +1,6 @@
 # Mist GPS UI for Android
 
-**This project is no longer maintained. Required dependencies may no longer be available.**
+*This project is no longer maintained. Required dependencies may no longer be available.*
 
 Example software for getting started with Mist Ui development. It demonstrates creating a Mist Ui as a native Android App. This software is freshly baked, expect problems. We are working on it.
 
